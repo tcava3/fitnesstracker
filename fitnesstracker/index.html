@@ -8,7 +8,7 @@
 <!-- PWA meta tags -->
 <meta name="application-name" content="FitnessTracker">
 <meta name="description" content="Level up by training more.">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#0D1117">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -26,8 +26,8 @@
     description: 'Level up by training more.',
     start_url: '.',
     display: 'standalone',
-    background_color: '#0a0a0a',
-    theme_color: '#0a0a0a',
+    background_color: '#0D1117',
+    theme_color: '#0D1117',
     orientation: 'portrait-primary',
     icons: [
       {
@@ -45,7 +45,7 @@
   document.currentScript.after(link);
 })();
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -68,7 +68,7 @@
       <div class="auth-error" id="loginError"></div>
       <div class="auth-field">
         <label>Username</label>
-        <input type="text" id="loginUser" autocomplete="username" placeholder="Your adventurer name" onkeydown="if(event.key==='Enter')doLogin()">
+        <input type="text" id="loginUser" autocomplete="username" placeholder="Your username" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="auth-field">
         <label>Password</label>
@@ -83,7 +83,7 @@
       <div class="auth-error" id="registerError"></div>
       <div class="auth-field">
         <label>Username</label>
-        <input type="text" id="regUser" autocomplete="username" placeholder="Choose your adventurer name" onkeydown="if(event.key==='Enter')doRegister()">
+        <input type="text" id="regUser" autocomplete="username" placeholder="Choose a username" onkeydown="if(event.key==='Enter')doRegister()">
       </div>
       <div class="auth-field">
         <label>Password</label>
@@ -93,7 +93,7 @@
         <label>Confirm Password</label>
         <input type="password" id="regPass2" autocomplete="new-password" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()">
       </div>
-      <button class="btn-auth" onclick="doRegister()">Begin Your Journey</button>
+      <button class="btn-auth" onclick="doRegister()">Create Account</button>
       <div class="auth-hint">Already have an account? Click <em>Login</em> above.</div>
     </div>
   </div>
@@ -558,7 +558,7 @@ if ('serviceWorker' in navigator) {
   const swCode = `
 const CACHE = 'fitnesstracker-v1';
 const FONTS = [
-  'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap'
+  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'
 ];
 
 self.addEventListener('install', e => {
