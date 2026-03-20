@@ -21,7 +21,6 @@ const SPT_SIMPLE_INTENSITY = ['Pilates', 'Ice Skating'];
 function updateSptIntensity() {
   const exercise = document.getElementById('spt-exercise').value;
   const sel = document.getElementById('spt-intensity');
-  const current = sel.value;
   if (SPT_SIMPLE_INTENSITY.includes(exercise)) {
     sel.innerHTML = `
       <option value="1">Easy</option>
@@ -58,7 +57,7 @@ function getPreviewXp() {
     document.getElementById('cyc-intensity').value);
 }
 
-// ── Running pace helpers ──
+// ── Pace helpers ──
 function formatPace(minPerKm) {
   if (!isFinite(minPerKm) || minPerKm <= 0) return '—';
   const mins = Math.floor(minPerKm);
@@ -66,7 +65,6 @@ function formatPace(minPerKm) {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
-// Returns the standard distance bracket label for a given distance, or null
 function runDistanceBracket(d) {
   if (d >= 42.0 && d <= 42.4) return 'Marathon';
   if (d >= 21.0 && d <= 21.2) return 'Half Marathon';
@@ -77,8 +75,171 @@ function runDistanceBracket(d) {
   return null;
 }
 
-// PR key for a running pace PB: "Run PR: 5 km"
 function runPRKey(bracket) { return `Run PR: ${bracket}`; }
+
+// ── Insight engine: vs-average + suggested targets ──
+function showInsight(elId, html) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = html;
+  el.style.display = html ? '' : 'none';
+}
+
+function buildStrInsight() {
+  if (!state) return;
+  const w = parseFloat(document.getElementById('str-weight').value) || 0;
+  const s = parseInt(document.getElementById('str-sets').value) || 0;
+  const r = parseInt(document.getElementById('str-reps').value) || 0;
+  const exercise = document.getElementById('str-exercise').value;
+  if (!w || !s || !r) { showInsight('strInsight', ''); return; }
+
+  const thisVol = s * r * w;
+  const past = (state.log || []).filter(e => e.skill === 'str' && e.exercise === exercise);
+  const parts = [];
+
+  if (past.length >= 2) {
+    const recent = past.slice(-8);
+    const avgVol = recent.reduce((sum, e) => {
+      const m = e.detail.match(/(\d+)\s*sets\s*[×x]\s*(\d+)\s*reps\s*@\s*([\d.]+)kg/i);
+      return sum + (m ? parseInt(m[1]) * parseInt(m[2]) * parseFloat(m[3]) : 0);
+    }, 0) / recent.length;
+
+    if (avgVol > 0) {
+      const diff = ((thisVol - avgVol) / avgVol * 100).toFixed(0);
+      const sign = diff >= 0 ? '+' : '';
+      const color = diff >= 0 ? 'var(--run-color)' : 'var(--str-color)';
+      parts.push(`<span style="color:${color}">${sign}${diff}% vs your recent average volume for ${exercise}</span>`);
+    }
+  }
+
+  // Suggest a target: best single weight + 2.5kg
+  const prs = getPRs();
+  const pr = prs[exercise];
+  if (pr && pr.value > 0) {
+    const target = pr.value + 2.5;
+    if (w < target) {
+      parts.push(`<span style="color:var(--text-dim)">Your ${exercise} PB is ${pr.value}kg — try ${target}kg for a new record</span>`);
+    } else if (w > pr.value) {
+      parts.push(`<span style="color:var(--accent)">🏅 This would be a new ${exercise} PB!</span>`);
+    }
+  }
+
+  showInsight('strInsight', parts.join('<br>'));
+}
+
+function buildRunInsight() {
+  if (!state) return;
+  const d = parseFloat(document.getElementById('run-distance').value) || 0;
+  const t = parseInt(document.getElementById('run-duration').value) || 0;
+  if (!d || !t) { showInsight('runInsight', ''); return; }
+
+  const paceMinKm = t / d;
+  const parts = [];
+  const bracket = runDistanceBracket(d);
+
+  // vs average pace for same bracket (or all runs if no bracket)
+  const past = (state.log || []).filter(e => {
+    if (e.skill !== 'run') return false;
+    return bracket ? runDistanceBracket(e.prValue) === bracket : true;
+  });
+
+  if (past.length >= 2) {
+    const paces = past.map(e => {
+      const m = e.detail.match(/\(([0-9]+):([0-9]+)\/km\)/);
+      return m ? parseInt(m[1]) + parseInt(m[2]) / 60 : null;
+    }).filter(Boolean);
+    if (paces.length >= 2) {
+      const avgPace = paces.reduce((a, b) => a + b, 0) / paces.length;
+      const diffSec = Math.round((paceMinKm - avgPace) * 60);
+      const sign = diffSec <= 0 ? '' : '+';
+      const color = diffSec <= 0 ? 'var(--run-color)' : 'var(--str-color)';
+      const label = bracket ? `your avg ${bracket} pace` : 'your avg pace';
+      parts.push(`<span style="color:${color}">${sign}${diffSec}s/km vs ${label} (${formatPace(avgPace)}/km avg)</span>`);
+    }
+  }
+
+  // Suggested target from PB
+  if (bracket) {
+    const prs = getPRs();
+    const pr = prs[runPRKey(bracket)];
+    if (pr && pr.value > 0) {
+      const targetPace = pr.value - (5 / 60); // 5 sec/km faster
+      if (paceMinKm > pr.value) {
+        parts.push(`<span style="color:var(--text-dim)">${bracket} PB: ${formatPace(pr.value)}/km — aim for ${formatPace(targetPace)}/km to beat it</span>`);
+      } else {
+        parts.push(`<span style="color:var(--accent)">🏅 This would be a new ${bracket} PB!</span>`);
+      }
+    } else if (!pr) {
+      parts.push(`<span style="color:var(--text-dim)">First ${bracket} attempt — this will set your baseline</span>`);
+    }
+  }
+
+  showInsight('runInsight', parts.join('<br>'));
+}
+
+function buildSwmInsight() {
+  if (!state) return;
+  const d = parseFloat(document.getElementById('swm-distance').value) || 0;
+  const t = parseInt(document.getElementById('swm-duration').value) || 0;
+  const poolLen = parseInt(document.getElementById('swm-pool-length').value) || 0;
+  if (!d || !t) { showInsight('swmInsight', ''); return; }
+
+  const parts = [];
+  const distM = d * 1000;
+
+  // Pace per 100m if pool length known
+  if (poolLen > 0) {
+    const laps = distM / poolLen;
+    const secPer100 = (t * 60) / (distM / 100);
+    const minsPer100 = secPer100 / 60;
+    parts.push(`<span style="color:var(--swm-color)">${formatPace(minsPer100)}/100m pace · ${Math.round(laps)} laps of ${poolLen}m</span>`);
+  }
+
+  // vs average distance
+  const past = (state.log || []).filter(e => e.skill === 'swm');
+  if (past.length >= 2) {
+    const avgDist = past.reduce((sum, e) => sum + (e.prValue || 0), 0) / past.length;
+    if (avgDist > 0) {
+      const diff = ((d - avgDist) / avgDist * 100).toFixed(0);
+      const sign = diff >= 0 ? '+' : '';
+      const color = diff >= 0 ? 'var(--run-color)' : 'var(--str-color)';
+      parts.push(`<span style="color:${color}">${sign}${diff}% vs your average swim distance (${avgDist.toFixed(2)}km avg)</span>`);
+    }
+  }
+
+  showInsight('swmInsight', parts.join('<br>'));
+}
+
+function buildCycInsight() {
+  if (!state) return;
+  const d = parseFloat(document.getElementById('cyc-distance').value) || 0;
+  const t = parseInt(document.getElementById('cyc-duration').value) || 0;
+  if (!d || !t) { showInsight('cycInsight', ''); return; }
+
+  const speedKmh = d / t * 60;
+  const parts = [];
+
+  const past = (state.log || []).filter(e => e.skill === 'cyc');
+  if (past.length >= 2) {
+    const speeds = past.map(e => {
+      const m = e.detail.match(/([\d.]+)km\s+in\s+(\d+)\s*min/);
+      return m ? parseFloat(m[1]) / parseInt(m[2]) * 60 : null;
+    }).filter(Boolean);
+    if (speeds.length >= 2) {
+      const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+      const diff = ((speedKmh - avgSpeed) / avgSpeed * 100).toFixed(0);
+      const sign = diff >= 0 ? '+' : '';
+      const color = diff >= 0 ? 'var(--run-color)' : 'var(--str-color)';
+      parts.push(`<span style="color:${color}">${speedKmh.toFixed(1)} km/h · ${sign}${diff}% vs your avg speed (${avgSpeed.toFixed(1)} km/h avg)</span>`);
+    } else {
+      parts.push(`<span style="color:var(--cyc-color)">${speedKmh.toFixed(1)} km/h average speed</span>`);
+    }
+  } else {
+    parts.push(`<span style="color:var(--cyc-color)">${speedKmh.toFixed(1)} km/h average speed</span>`);
+  }
+
+  showInsight('cycInsight', parts.join('<br>'));
+}
 
 function updatePreview() {
   if (!state) return;
@@ -90,7 +251,7 @@ function updatePreview() {
     ? `→ Level up! ${cur} → ${next}`
     : `(${xpToNextLevel(skill.xp + xp).toLocaleString()} XP to next level)`;
 
-  // Update running pace display
+  // Running pace display
   const paceEl = document.getElementById('runPaceDisplay');
   if (paceEl && activeTab === 'run') {
     const d = parseFloat(document.getElementById('run-distance').value) || 0;
@@ -106,26 +267,17 @@ function updatePreview() {
         const key = runPRKey(bracket);
         const existing = prs[key];
         if (existing) {
-          const existingPace = existing.value; // stored as min/km float
-          if (paceMinKm < existingPace) {
-            prNote = `<span class="pace-bracket-badge">🏅 New ${bracket} PB!</span>`;
-          } else {
-            const diff = paceMinKm - existingPace;
-            prNote = `<span class="pace-bracket-badge">${bracket} PB: ${formatPace(existingPace)} (${formatPace(diff)} off)</span>`;
-          }
+          const diff = paceMinKm - existing.value;
+          prNote = paceMinKm < existing.value
+            ? `<span class="pace-bracket-badge">🏅 New ${bracket} PB!</span>`
+            : `<span class="pace-bracket-badge">${bracket} PB: ${formatPace(existing.value)} (${formatPace(diff)} off)</span>`;
         } else {
           prNote = `<span class="pace-bracket-badge">${bracket} — first attempt</span>`;
         }
       }
       paceEl.innerHTML = `
-        <div class="pace-stat">
-          <span class="pace-stat-val">${paceFormatted}</span>
-          <span class="pace-stat-lbl">min / km</span>
-        </div>
-        <div class="pace-stat">
-          <span class="pace-stat-val">${speedKmh}</span>
-          <span class="pace-stat-lbl">km / h</span>
-        </div>
+        <div class="pace-stat"><span class="pace-stat-val">${paceFormatted}</span><span class="pace-stat-lbl">min / km</span></div>
+        <div class="pace-stat"><span class="pace-stat-val">${speedKmh}</span><span class="pace-stat-lbl">km / h</span></div>
         ${prNote}`;
     } else {
       paceEl.innerHTML = '';
@@ -133,6 +285,13 @@ function updatePreview() {
   } else if (paceEl) {
     paceEl.innerHTML = '';
   }
+
+  // Insights
+  if (activeTab === 'str') buildStrInsight();
+  else if (activeTab === 'run') buildRunInsight();
+  else if (activeTab === 'swm') buildSwmInsight();
+  else if (activeTab === 'cyc') buildCycInsight();
+  else showInsight('sptInsight', '');
 }
 
 function renderSkills() {
@@ -168,11 +327,11 @@ function renderSkills() {
   document.getElementById('activitiesLogged').textContent = state.activities;
 }
 
-// ── Calendar state ──
+// ── Calendar ──
 let calYear  = new Date().getFullYear();
-let calMonth = new Date().getMonth(); // 0-indexed
+let calMonth = new Date().getMonth();
 
-function renderLog() { renderCalendar(); } // keep compatibility
+function renderLog() { renderCalendar(); }
 
 function renderCalendar() {
   const label = document.getElementById('calMonthLabel');
@@ -183,7 +342,6 @@ function renderCalendar() {
                   'July','August','September','October','November','December'];
   label.textContent = `${MONTHS[calMonth]} ${calYear}`;
 
-  // Build a map of date string → entries
   const byDate = {};
   (state.log || []).forEach(e => {
     if (!e.date) return;
@@ -191,15 +349,12 @@ function renderCalendar() {
     byDate[e.date].push(e);
   });
 
-  // First day of month — adjust so week starts Monday (0=Mon … 6=Sun)
   const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const offset   = (firstDay + 6) % 7; // Mon=0
+  const offset   = (firstDay + 6) % 7;
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const todayStr = new Date().toISOString().slice(0, 10);
 
   grid.innerHTML = '';
-
-  // Empty cells before first day
   for (let i = 0; i < offset; i++) {
     const empty = document.createElement('div');
     empty.className = 'cal-day empty';
@@ -217,7 +372,6 @@ function renderCalendar() {
     cell.innerHTML = `<span>${d}</span>`;
 
     if (hasAct) {
-      // Show up to 3 colour dots for the skills logged that day
       const skills = [...new Set(entries.map(e => e.skill))].slice(0, 3);
       const dots = document.createElement('div');
       dots.className = 'cal-dots';
@@ -229,7 +383,6 @@ function renderCalendar() {
       cell.appendChild(dots);
       cell.onclick = () => openDayModal(dateStr, entries);
     }
-
     grid.appendChild(cell);
   }
 }
@@ -264,7 +417,7 @@ function renderDayModalEntries(dateStr) {
       <div class="day-entry-dot ${e.skill}"></div>
       <div class="day-entry-info">
         <div class="day-entry-name">${e.exercise}</div>
-        <div class="day-entry-detail">${e.detail}</div>
+        <div class="day-entry-detail">${e.detail}${e.notes ? ` · <em>${e.notes}</em>` : ''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:4px">
         <div>
@@ -280,23 +433,15 @@ function deleteEntry(id, dateStr) {
   const idx = state.log.findIndex(e => e.id === id);
   if (idx === -1) return;
   const entry = state.log[idx];
-
-  // Reverse XP
   state.skills[entry.skill].xp = Math.max(0, state.skills[entry.skill].xp - entry.xp);
   state.activities = Math.max(0, (state.activities || 1) - 1);
-
-  // Remove from log
   state.log.splice(idx, 1);
-
-  // Rebuild PRs
   if (entry.skill === 'run') {
-    // Rebuild all pace brackets that may have been affected
     const bracket = entry.prValue > 0 ? runDistanceBracket(entry.prValue) : null;
     if (bracket) rebuildPRsForExercise(runPRKey(bracket), 'run');
   } else {
     rebuildPRsForExercise(entry.exercise, entry.skill);
   }
-
   save();
   renderSkills();
   renderCalendar();
@@ -304,7 +449,6 @@ function deleteEntry(id, dateStr) {
 }
 
 function rebuildPRsForExercise(exercise, skill) {
-  // Pace PR keys ("Run PR: 5 km") are rebuilt separately
   if (exercise.startsWith('Run PR: ')) {
     const bracket = exercise.replace('Run PR: ', '');
     const key = runPRKey(bracket);
@@ -312,12 +456,8 @@ function rebuildPRsForExercise(exercise, skill) {
       e.skill === 'run' && e.prValue > 0 && runDistanceBracket(e.prValue) === bracket
     );
     if (!records.length) { delete state.prs[key]; return; }
-    // Best pace = minimum min/km, stored as prValue for run? No — pace was stored separately.
-    // Re-derive pace from detail or recompute. We stored detail as "Xkm in Y min (P/km)"
-    // Re-parse pace from log entries that match this bracket
     let best = null;
     records.forEach(e => {
-      // prValue for run is distance — re-derive pace from detail string
       const match = e.detail && e.detail.match(/\(([0-9]+):([0-9]+)\/km\)/);
       if (match) {
         const paceVal = parseInt(match[1]) + parseInt(match[2]) / 60;
@@ -331,12 +471,8 @@ function rebuildPRsForExercise(exercise, skill) {
     }
     return;
   }
-  // Non-pace PRs: find highest prValue in log for this exercise
   const records = state.log.filter(e => e.exercise === exercise && e.skill === skill);
-  if (!records.length) {
-    delete state.prs[exercise];
-    return;
-  }
+  if (!records.length) { delete state.prs[exercise]; return; }
   const best = records.reduce((a, b) => (b.prValue > a.prValue ? b : a));
   state.prs[exercise] = { skill, value: best.prValue, unit: best.prUnit, detail: best.detail, date: best.date };
 }
@@ -362,6 +498,7 @@ function logExercise() {
   const oldLevel = levelFromXp(skill.xp);
   let xp = 0, detail = '', exercise = '';
   let prValue = 0, prUnit = 'kg';
+  let notes = '';
 
   const now = new Date();
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -375,9 +512,12 @@ function logExercise() {
     const r = parseInt(document.getElementById('str-reps').value) || 0;
     const el = document.getElementById('str-exercise');
     exercise = el.options[el.selectedIndex].text;
-    xp = calcStrXp(w, s, r); detail = `${s} sets × ${r} reps @ ${w}kg`;
+    xp = calcStrXp(w, s, r);
+    detail = `${s} sets × ${r} reps @ ${w}kg`;
     prValue = w; prUnit = 'kg';
+    notes = (document.getElementById('str-notes').value || '').trim();
     updateChallengeProgress('str', { w, s, r });
+
   } else if (activeTab === 'run') {
     const d = parseFloat(document.getElementById('run-distance').value) || 0;
     const t = parseInt(document.getElementById('run-duration').value) || 0;
@@ -388,7 +528,7 @@ function logExercise() {
     xp = calcRunXp(d, t, i);
     detail = `${d}km in ${t} min (${formatPace(paceMinKm)}/km)`;
     prValue = d; prUnit = 'km';
-    // Store pace PR for standard distance brackets
+    notes = (document.getElementById('run-notes').value || '').trim();
     const bracket = runDistanceBracket(d);
     if (bracket && paceMinKm > 0) {
       const key = runPRKey(bracket);
@@ -400,43 +540,60 @@ function logExercise() {
       }
     }
     updateChallengeProgress('run', { d, t });
+
   } else if (activeTab === 'swm') {
     const d = parseFloat(document.getElementById('swm-distance').value) || 0;
     const t = parseInt(document.getElementById('swm-duration').value) || 0;
     const i = document.getElementById('swm-intensity').value;
+    const poolLen = parseInt(document.getElementById('swm-pool-length').value) || 0;
     const el = document.getElementById('swm-exercise');
     exercise = el.options[el.selectedIndex].text;
-    xp = calcSwmXp(d, t, i); detail = `${d}km in ${t} min`;
+    xp = calcSwmXp(d, t, i);
+    // Include pace/100m in detail if pool length known
+    let paceNote = '';
+    if (poolLen > 0 && d > 0 && t > 0) {
+      const secPer100 = (t * 60) / (d * 10);
+      paceNote = ` · ${formatPace(secPer100 / 60)}/100m`;
+    }
+    detail = `${d}km in ${t} min${paceNote}${poolLen ? ` (${poolLen}m pool)` : ''}`;
     prValue = d; prUnit = 'km';
+    notes = (document.getElementById('swm-notes').value || '').trim();
     updateChallengeProgress('swm', { d, t });
+
   } else if (activeTab === 'spt') {
     const t = parseInt(document.getElementById('spt-duration').value) || 0;
     const i = document.getElementById('spt-intensity').value;
     const el = document.getElementById('spt-exercise');
     exercise = el.options[el.selectedIndex].text;
-    xp = calcSptXp(t, i); detail = `${t} min`;
+    xp = calcSptXp(t, i);
+    detail = `${t} min`;
     prValue = t; prUnit = 'min';
+    notes = (document.getElementById('spt-notes').value || '').trim();
     updateChallengeProgress('spt', { t });
-  } else {
+
+  } else { // cyc
     const d = parseFloat(document.getElementById('cyc-distance').value) || 0;
     const t = parseInt(document.getElementById('cyc-duration').value) || 0;
     const i = document.getElementById('cyc-intensity').value;
     const el = document.getElementById('cyc-exercise');
     exercise = el.options[el.selectedIndex].text;
-    xp = calcCycXp(d, t, i); detail = `${d}km in ${t} min`;
+    xp = calcCycXp(d, t, i);
+    detail = `${d}km in ${t} min`;
     prValue = d; prUnit = 'km';
+    notes = (document.getElementById('cyc-notes').value || '').trim();
     updateChallengeProgress('cyc', { d, t });
   }
 
   if (xp <= 0) return;
-  skill.xp += xp; state.activities++;
+  skill.xp += xp;
+  state.activities++;
   const entryId = Date.now() + Math.random();
-  state.log.push({ id: entryId, skill: activeTab, exercise, detail, xp, time, date, prValue, prUnit });
+  const entry = { id: entryId, skill: activeTab, exercise, detail, xp, time, date, prValue, prUnit };
+  if (notes) entry.notes = notes;
+  state.log.push(entry);
 
-  // Track personal records
   updatePR(activeTab, exercise, prValue, prUnit, detail, date);
 
-  // Prune entries older than 3 years
   const cutoff = new Date();
   cutoff.setFullYear(cutoff.getFullYear() - 3);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
@@ -445,5 +602,15 @@ function logExercise() {
   const newLevel = levelFromXp(skill.xp);
   if (newLevel > oldLevel) showLevelUp(skill.name, newLevel, skill.icon);
 
-  save(); renderSkills(); renderLog(); updatePreview(); renderChallenges();
+  // Clear notes fields
+  ['str','run','swm','cyc','spt'].forEach(t => {
+    const n = document.getElementById(t + '-notes');
+    if (n) n.value = '';
+  });
+
+  save();
+  renderSkills();
+  renderLog();
+  updatePreview();
+  renderChallenges();
 }

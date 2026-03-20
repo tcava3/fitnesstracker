@@ -1650,3 +1650,195 @@ select option { background: var(--bg-panel); }
   background: var(--accent-light);
   box-shadow: 0 4px 14px rgba(232,132,90,0.25);
 }
+
+/* ══ NOTES FIELD ══ */
+.notes-field {
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+
+.notes-field input {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  border-style: dashed;
+}
+
+.notes-field input:focus {
+  border-color: var(--accent-dim);
+  border-style: solid;
+  color: var(--text);
+}
+
+/* ══ ACTIVITY INSIGHT ══ */
+.activity-insight {
+  background: var(--bg-deep);
+  border: 1px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 9px 13px;
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  display: none;
+}
+
+.activity-insight:not(:empty) { display: block; }
+
+/* ══ CHALLENGE STREAK ══ */
+.challenges-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.challenge-streak {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ══ WEIGHT HISTORY ══ */
+.weight-history-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bg-border);
+}
+
+.weight-history-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* ══ CHALLENGE CARD STYLES (used by challenges.js renderChallenges) ══ */
+.challenge-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--bg-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: border-color 0.15s;
+}
+
+.challenge-card.selectable { cursor: pointer; }
+.challenge-card.selectable:hover { border-color: var(--accent-dim); }
+.challenge-card.completed { border-color: var(--run-color); opacity: 0.75; }
+
+.challenge-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+
+.challenge-skill-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.challenge-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.challenge-card-body { }
+
+.challenge-desc {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.challenge-progress-wrap {
+  background: var(--bg-panel);
+  border: 1px solid var(--bg-border);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.challenge-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.challenge-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.prog-val { color: var(--text); font-weight: 600; }
+
+.challenge-reward {
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.challenge-complete-badge {
+  display: none;
+  font-size: 0.78rem;
+  color: var(--run-color);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.challenge-card.completed .challenge-complete-badge { display: block; }
+
+/* Challenge modal option styles */
+.challenge-option-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.challenge-option-desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.challenge-option-confirm {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.challenge-option.pending .challenge-option-confirm { display: flex; }
+
+.btn-confirm-challenge {
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-confirm-challenge:hover { background: var(--accent-light); }
+
+.btn-cancel-challenge {
+  background: transparent;
+  border: 1px solid var(--bg-border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel-challenge:hover { border-color: var(--danger); color: #e08878; }

@@ -196,7 +196,14 @@ function daysUntilMonday() {
 function getChallengesState() {
   const wk = currentWeekKey();
   if (!state.challenges || state.challenges.week !== wk) {
-    // New week — reset but keep no pre-selection (user picks)
+    // Archive the outgoing week's completion status before resetting
+    if (state.challenges && state.challenges.week) {
+      if (!state.challengeHistory) state.challengeHistory = [];
+      const anyComplete = Object.values(state.challenges.completed || {}).some(Boolean);
+      state.challengeHistory.push({ week: state.challenges.week, anyComplete });
+      // Keep only last 52 weeks
+      if (state.challengeHistory.length > 52) state.challengeHistory.shift();
+    }
     state.challenges = {
       week: wk,
       chosen: { str: null, run: null, swm: null, cyc: null, spt: null },
@@ -206,6 +213,20 @@ function getChallengesState() {
     };
   }
   return state.challenges;
+}
+
+// Count consecutive weeks (ending last week) where at least one challenge was completed
+function calcChallengeStreak() {
+  const history = state.challengeHistory || [];
+  if (!history.length) return 0;
+  // Sort descending by week key
+  const sorted = [...history].sort((a, b) => b.week.localeCompare(a.week));
+  let streak = 0;
+  for (const entry of sorted) {
+    if (entry.anyComplete) streak++;
+    else break;
+  }
+  return streak;
 }
 
 function getChallengeById(id) {
@@ -293,10 +314,18 @@ function renderChallenges() {
   const cs = getChallengesState();
   const body = document.getElementById('challengesBody');
   const resetLabel = document.getElementById('challengeResetLabel');
+  const streakLabel = document.getElementById('challengeStreakLabel');
   if (!body) return;
 
   const days = daysUntilMonday();
   resetLabel.textContent = `Resets in ${days} day${days !== 1 ? 's' : ''}`;
+
+  // Streak: count consecutive past weeks where at least one challenge was completed
+  const streak = calcChallengeStreak();
+  if (streakLabel) {
+    streakLabel.textContent = streak > 0 ? `🔥 ${streak} week streak` : '';
+    streakLabel.style.display = streak > 0 ? '' : 'none';
+  }
 
   const skills = ['str','run','swm','cyc','spt'];
   const skillLabels = { str:'Strength', run:'Running', swm:'Swimming', cyc:'Cycling', spt:'Sports' };

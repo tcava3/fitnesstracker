@@ -186,6 +186,11 @@
               <input type="number" id="str-reps" min="1" value="8" oninput="updatePreview()">
             </div>
           </div>
+          <div class="activity-insight" id="strInsight"></div>
+          <div class="field notes-field">
+            <label>Notes (optional)</label>
+            <input type="text" id="str-notes" placeholder="e.g. felt strong, failed last rep…" maxlength="140">
+          </div>
         </div>
 
         <!-- Running -->
@@ -226,6 +231,11 @@
             </div>
           </div>
           <div class="run-pace-display" id="runPaceDisplay"></div>
+          <div class="activity-insight" id="runInsight"></div>
+          <div class="field notes-field">
+            <label>Notes (optional)</label>
+            <input type="text" id="run-notes" placeholder="e.g. felt great, windy conditions…" maxlength="140">
+          </div>
         </div>
 
         <!-- Swimming -->
@@ -257,6 +267,19 @@
                 <option value="1.8">Race Pace</option>
               </select>
             </div>
+            <div class="field">
+              <label>Pool Length (m) <span style="color:var(--text-dim);font-weight:400">optional</span></label>
+              <select id="swm-pool-length">
+                <option value="">— open water / unknown</option>
+                <option value="25" selected>25m (short course)</option>
+                <option value="50">50m (long course / Olympic)</option>
+              </select>
+            </div>
+          </div>
+          <div class="activity-insight" id="swmInsight"></div>
+          <div class="field notes-field">
+            <label>Notes (optional)</label>
+            <input type="text" id="swm-notes" placeholder="e.g. focused on turns, felt smooth…" maxlength="140">
           </div>
         </div>
 
@@ -288,6 +311,11 @@
                 <option value="1.8">Race Pace</option>
               </select>
             </div>
+          </div>
+          <div class="activity-insight" id="cycInsight"></div>
+          <div class="field notes-field">
+            <label>Notes (optional)</label>
+            <input type="text" id="cyc-notes" placeholder="e.g. hilly route, legs felt heavy…" maxlength="140">
           </div>
         </div>
 
@@ -326,6 +354,10 @@
                 <option value="doubles">Doubles / Pairs</option>
               </select>
             </div>
+          </div>
+          <div class="field notes-field">
+            <label>Notes (optional)</label>
+            <input type="text" id="spt-notes" placeholder="e.g. won 3-1, great teamwork…" maxlength="140">
           </div>
         </div>
 
@@ -400,7 +432,10 @@
     <div class="challenges-panel">
       <div class="challenges-header">
         <h2>Weekly Challenges</h2>
-        <span class="challenges-reset" id="challengeResetLabel"></span>
+        <div class="challenges-header-right">
+          <span class="challenge-streak" id="challengeStreakLabel"></span>
+          <span class="challenges-reset" id="challengeResetLabel"></span>
+        </div>
       </div>
       <div class="challenges-body" id="challengesBody"></div>
     </div>
@@ -515,12 +550,16 @@
               <input type="number" id="profileHeight" min="100" max="250" step="1" placeholder="e.g. 178" oninput="saveProfile()">
             </div>
             <div class="field">
-              <label>Weight (kg)</label>
+              <label>Weight (kg) — log today's weight</label>
               <input type="number" id="profileWeight" min="30" max="300" step="0.1" placeholder="e.g. 75.5" oninput="saveProfile()">
             </div>
           </div>
           <div class="profile-bmi" id="profileBmi"></div>
           <div class="profile-save-indicator" id="profileSaveIndicator">✓ Saved</div>
+          <div class="weight-history-section" id="weightHistorySection" style="display:none">
+            <div class="weight-history-label">Weight over time</div>
+            <canvas id="weightChart" height="120" style="width:100%;display:block;margin-top:8px"></canvas>
+          </div>
         </div>
       </div>
 
