@@ -361,9 +361,15 @@
           </div>
         </div>
 
-        <div class="field" style="margin-bottom:14px">
-          <label>Date</label>
-          <input type="date" id="log-date" style="color-scheme:dark">
+        <div class="form-grid" style="margin-bottom:14px">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="log-date" style="color-scheme:dark">
+          </div>
+          <div class="field">
+            <label>Avg Heart Rate <span style="color:var(--text-dim);font-weight:400">optional</span></label>
+            <input type="number" id="log-hr" min="40" max="220" step="1" placeholder="e.g. 145 bpm">
+          </div>
         </div>
 
         <div class="xp-preview">

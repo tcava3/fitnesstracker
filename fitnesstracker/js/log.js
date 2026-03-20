@@ -417,7 +417,7 @@ function renderDayModalEntries(dateStr) {
       <div class="day-entry-dot ${e.skill}"></div>
       <div class="day-entry-info">
         <div class="day-entry-name">${e.exercise}</div>
-        <div class="day-entry-detail">${e.detail}${e.notes ? ` · <em>${e.notes}</em>` : ''}</div>
+        <div class="day-entry-detail">${e.detail}${e.notes ? ` · <em>${e.notes}</em>` : ''}${e.hr ? ` · <span style="color:var(--str-color)">♥ ${e.hr} bpm</span>` : ''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:4px">
         <div>
@@ -588,8 +588,10 @@ function logExercise() {
   skill.xp += xp;
   state.activities++;
   const entryId = Date.now() + Math.random();
+  const hr = parseInt(document.getElementById('log-hr').value) || 0;
   const entry = { id: entryId, skill: activeTab, exercise, detail, xp, time, date, prValue, prUnit };
   if (notes) entry.notes = notes;
+  if (hr >= 40 && hr <= 220) entry.hr = hr;
   state.log.push(entry);
 
   updatePR(activeTab, exercise, prValue, prUnit, detail, date);
@@ -607,6 +609,8 @@ function logExercise() {
     const n = document.getElementById(t + '-notes');
     if (n) n.value = '';
   });
+  const hrEl = document.getElementById('log-hr');
+  if (hrEl) hrEl.value = '';
 
   save();
   renderSkills();

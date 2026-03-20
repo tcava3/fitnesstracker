@@ -599,7 +599,7 @@ function renderSkillRecent(entries, skillKey) {
       <div class="skill-recent-dot ${skillKey}"></div>
       <div class="skill-recent-info">
         <div class="skill-recent-name">${e.exercise}</div>
-        <div class="skill-recent-detail">${e.detail}</div>
+        <div class="skill-recent-detail">${e.detail}${e.hr ? ` · <span style="color:var(--str-color)">♥ ${e.hr} bpm</span>` : ''}${e.notes ? ` · <em style="color:var(--text-dim)">${e.notes}</em>` : ''}</div>
       </div>
       <div class="skill-recent-right">
         <div class="skill-recent-xp">+${e.xp.toLocaleString()} XP</div>
