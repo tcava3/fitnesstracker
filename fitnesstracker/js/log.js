@@ -16,6 +16,26 @@ function setRunPreset(km) {
   if (el) { el.value = km; updatePreview(); }
 }
 
+const SPT_SIMPLE_INTENSITY = ['Pilates', 'Ice Skating'];
+
+function updateSptIntensity() {
+  const exercise = document.getElementById('spt-exercise').value;
+  const sel = document.getElementById('spt-intensity');
+  const current = sel.value;
+  if (SPT_SIMPLE_INTENSITY.includes(exercise)) {
+    sel.innerHTML = `
+      <option value="1">Easy</option>
+      <option value="1.2" selected>Moderate</option>
+      <option value="1.5">Hard</option>`;
+  } else {
+    sel.innerHTML = `
+      <option value="1">Casual / Training</option>
+      <option value="1.3" selected>Competitive Game</option>
+      <option value="1.6">Tournament / Finals</option>`;
+  }
+  updatePreview();
+}
+
 function getPreviewXp() {
   if (activeTab === 'str') return calcStrXp(
     parseFloat(document.getElementById('str-weight').value) || 0,
