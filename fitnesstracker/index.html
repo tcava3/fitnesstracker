@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FitnessTracker</title>
+
+<!-- PWA meta tags -->
+<meta name="application-name" content="FitnessTracker">
+<meta name="description" content="Level up by training more.">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitnessTracker">
+
+<!-- Inline SVG icon as data URI for manifest + apple touch icon -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230a0a0a'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' font-family='serif'%3E💪%3C/text%3E%3Ctext x='256' y='460' font-size='72' text-anchor='middle' font-family='serif' fill='%23c8a84b' letter-spacing='2'%3EFT%3C/text%3E%3C/svg%3E">
+
+<!-- Inline web app manifest -->
+<script>
+(function() {
+  const manifest = {
+    name: 'FitnessTracker',
+    short_name: 'FitnessTracker',
+    description: 'Level up by training more.',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0a0a0a',
+    theme_color: '#0a0a0a',
+    orientation: 'portrait-primary',
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%230a0a0a'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' font-family='serif'%3E💪%3C/text%3E%3Ctext x='256' y='460' font-size='72' text-anchor='middle' font-family='serif' fill='%23c8a84b' letter-spacing='2'%3EFT%3C/text%3E%3C/svg%3E",
+        sizes: '512x512',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = url;
+  document.currentScript.after(link);
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-top">
+      <div class="auth-logo">Fitness<span>Tracker</span></div>
+      <div class="auth-tagline">Level up by training more.</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="formLogin" class="auth-body">
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-field">
+        <label>Username</label>
+        <input type="text" id="loginUser" autocomplete="username" placeholder="Your adventurer name" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-auth" onclick="doLogin()">Enter</button>
+      <div class="auth-hint">No account? Click <em>Create Account</em> above.</div>
+    </div>
+
+    <!-- Register form -->
+    <div id="formRegister" class="auth-body" style="display:none">
+      <div class="auth-error" id="registerError"></div>
+      <div class="auth-field">
+        <label>Username</label>
+        <input type="text" id="regUser" autocomplete="username" placeholder="Choose your adventurer name" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="regPass" autocomplete="new-password" placeholder="At least 8 characters" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div class="auth-field">
+        <label>Confirm Password</label>
+        <input type="password" id="regPass2" autocomplete="new-password" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <button class="btn-auth" onclick="doRegister()">Begin Your Journey</button>
+      <div class="auth-hint">Already have an account? Click <em>Login</em> above.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="mainApp">
+  <div class="app">
+
+    <header>
+      <div class="logo">Fitness<span>Tracker</span></div>
+      <div class="tagline">Level up by training more.</div>
+      <div class="header-user">
+        <span class="header-username" id="headerUsername"></span>
+        <button class="btn-logout" onclick="doLogout()">Logout</button>
+      </div>
+    </header>
+
+
+    <!-- Page navigation -->
+    <div class="page-nav-wrap">
+      <nav class="page-nav">
+        <button class="page-nav-btn active" id="navDashboard" onclick="showPage('dashboard')">Dashboard</button>
+        <button class="page-nav-btn" id="navPR" onclick="showPage('pr')">Personal Records</button>
+        <button class="page-nav-btn" id="navProfile" onclick="showPage('profile')">Profile</button>
+      </nav>
+    </div>
+
+    <!-- Dashboard page -->
+    <div id="pageDashboard">
+
+    <div class="skills-grid" id="skillsGrid"></div>
+
+    <div class="stats-bar">
+      <div class="stat-block">
+        <div class="stat-val" id="totalXp">0</div>
+        <div class="stat-lbl">Total XP</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val" id="totalLevel">3</div>
+        <div class="stat-lbl">Total Level</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val" id="activitiesLogged">0</div>
+        <div class="stat-lbl">Activities</div>
+      </div>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-panel-header">
+        <h2>Log Exercise</h2>
+        <button class="btn-gpx-upload" onclick="document.getElementById('gpxFileInput').click()" title="Import from GPX file">
+          📡 Import GPX
+        </button>
+        <input type="file" id="gpxFileInput" accept=".gpx" style="display:none" onchange="handleGpxUpload(event)">
+      </div>
+      <div class="log-panel-body">
+        <div class="skill-tabs">
+          <button class="skill-tab str active" onclick="setTab('str')">💪 Strength</button>
+          <button class="skill-tab run" onclick="setTab('run')">🏃 Running</button>
+          <button class="skill-tab swm" onclick="setTab('swm')">🏊 Swimming</button>
+          <button class="skill-tab cyc" onclick="setTab('cyc')">🚴 Cycling</button>
+          <button class="skill-tab spt" onclick="setTab('spt')">⚽ Sports</button>
+        </div>
+
+        <!-- Strength -->
+        <div id="form-str">
+          <div class="form-grid">
+            <div class="field">
+              <label>Exercise</label>
+              <select id="str-exercise">
+                <option>Back Squat</option><option>Deadlift</option><option>Bench Press</option>
+                <option>Overhead Press</option><option>Barbell Row</option>
+                <option>Pull-up / Chin-up</option><option>Dumbbell Press</option>
+                <option>Dumbbell Row</option><option>Dumbbell Curl</option>
+                <option>Leg Press</option><option>Lunge</option>
+                <option>Other Compound</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Weight (kg)</label>
+              <input type="number" id="str-weight" min="0" value="60" step="2.5" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Sets</label>
+              <input type="number" id="str-sets" min="1" value="3" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Reps per Set</label>
+              <input type="number" id="str-reps" min="1" value="8" oninput="updatePreview()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Running -->
+        <div id="form-run" style="display:none">
+          <div class="run-distance-presets">
+            <span class="run-preset-label">Quick:</span>
+            <button class="run-preset-btn" onclick="setRunPreset(5)">5 km</button>
+            <button class="run-preset-btn" onclick="setRunPreset(10)">10 km</button>
+            <button class="run-preset-btn" onclick="setRunPreset(21.1)">Half</button>
+            <button class="run-preset-btn" onclick="setRunPreset(42.2)">Marathon</button>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Activity</label>
+              <select id="run-exercise">
+                <option>Outdoor Run</option><option>Treadmill Run</option>
+                <option>Trail Run</option><option>Sprint Intervals</option>
+                <option>Tempo Run</option><option>Long Slow Run</option>
+                <option>HIIT / Circuit</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Distance (km)</label>
+              <input type="number" id="run-distance" min="0" value="5" step="0.1" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Duration (minutes)</label>
+              <input type="number" id="run-duration" min="1" value="30" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Intensity</label>
+              <select id="run-intensity" oninput="updatePreview()">
+                <option value="1">Easy</option>
+                <option value="1.2" selected>Moderate</option>
+                <option value="1.5">Hard</option>
+                <option value="1.8">Max Effort</option>
+              </select>
+            </div>
+          </div>
+          <div class="run-pace-display" id="runPaceDisplay"></div>
+        </div>
+
+        <!-- Swimming -->
+        <div id="form-swm" style="display:none">
+          <div class="form-grid">
+            <div class="field">
+              <label>Stroke / Style</label>
+              <select id="swm-exercise">
+                <option>Freestyle</option><option>Breaststroke</option>
+                <option>Backstroke</option><option>Butterfly</option>
+                <option>Mixed / IM</option><option>Open Water Swim</option>
+                <option>Pool Laps (Mixed)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Distance (km)</label>
+              <input type="number" id="swm-distance" min="0" value="1" step="0.05" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Duration (minutes)</label>
+              <input type="number" id="swm-duration" min="1" value="30" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Intensity</label>
+              <select id="swm-intensity" oninput="updatePreview()">
+                <option value="1">Easy</option>
+                <option value="1.2" selected>Moderate</option>
+                <option value="1.5">Hard</option>
+                <option value="1.8">Race Pace</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cycling -->
+        <div id="form-cyc" style="display:none">
+          <div class="form-grid">
+            <div class="field">
+              <label>Activity</label>
+              <select id="cyc-exercise">
+                <option>Road Cycling</option><option>Mountain Biking</option>
+                <option>Stationary Bike</option><option>Spin Class</option>
+                <option>Commute Ride</option><option>Gravel Ride</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Distance (km)</label>
+              <input type="number" id="cyc-distance" min="0" value="20" step="0.5" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Duration (minutes)</label>
+              <input type="number" id="cyc-duration" min="1" value="60" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Intensity</label>
+              <select id="cyc-intensity" oninput="updatePreview()">
+                <option value="1">Easy</option>
+                <option value="1.2" selected>Moderate</option>
+                <option value="1.5">Hard</option>
+                <option value="1.8">Race Pace</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sports -->
+        <div id="form-spt" style="display:none">
+          <div class="form-grid">
+            <div class="field">
+              <label>Sport</label>
+              <select id="spt-exercise">
+                <option>Netball</option><option>Basketball</option>
+                <option>Soccer / Football</option><option>Tennis</option>
+                <option>Volleyball</option><option>Touch Football</option>
+                <option>AFL</option><option>Rugby</option>
+                <option>Badminton</option><option>Squash</option>
+                <option>Hockey</option><option>Other Sport</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Duration (minutes)</label>
+              <input type="number" id="spt-duration" min="1" value="60" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label>Intensity</label>
+              <select id="spt-intensity" oninput="updatePreview()">
+                <option value="1">Casual / Training</option>
+                <option value="1.3" selected>Competitive Game</option>
+                <option value="1.6">Tournament / Finals</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Players (optional)</label>
+              <select id="spt-format">
+                <option value="team">Team Sport</option>
+                <option value="1v1">1v1 / Singles</option>
+                <option value="doubles">Doubles / Pairs</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:14px">
+          <label>Date</label>
+          <input type="date" id="log-date" style="color-scheme:dark">
+        </div>
+
+        <div class="xp-preview">
+          <span class="xp-label">XP to award:</span>
+          <span class="xp-val" id="xpPreview">—</span>
+          <span class="xp-label" id="xpPreviewNote"></span>
+          <button class="xp-info-btn" onclick="toggleXpInfo()" title="How is XP calculated?">?</button>
+        </div>
+        <div class="xp-formula-note" id="xpFormulaNote"></div>
+
+        <button class="btn-log" onclick="logExercise()">Log Activity</button>
+      </div>
+    </div>
+
+    <!-- GPX Import Modal -->
+    <div id="gpxModal">
+      <div class="gpx-modal-box">
+        <div class="gpx-modal-header">
+          <div>
+            <h2 id="gpxModalTitle">Activity Detected</h2>
+            <div class="gpx-modal-subtitle" id="gpxModalSubtitle"></div>
+          </div>
+          <button class="btn-close-modal" onclick="closeGpxModal()">✕</button>
+        </div>
+        <div class="gpx-modal-body">
+          <div class="gpx-stats-grid" id="gpxStatsGrid"></div>
+          <div class="gpx-error" id="gpxError"></div>
+          <div class="gpx-field-group" id="gpxFields">
+            <div class="gpx-field">
+              <label>Skill</label>
+              <select id="gpxSkill" onchange="updateGpxPreview()">
+                <option value="run">🏃 Running</option>
+                <option value="cyc">🚴 Cycling</option>
+                <option value="swm">🏊 Swimming</option>
+                <option value="spt">⚽ Sports</option>
+              </select>
+            </div>
+            <div class="gpx-field">
+              <label>Activity Name</label>
+              <select id="gpxExercise"></select>
+            </div>
+            <div class="gpx-field" id="gpxIntensityField">
+              <label>Intensity</label>
+              <select id="gpxIntensity" onchange="updateGpxPreview()">
+                <option value="1">Easy</option>
+                <option value="1.2" selected>Moderate</option>
+                <option value="1.5">Hard</option>
+                <option value="1.8">Max Effort</option>
+              </select>
+            </div>
+            <div class="gpx-field">
+              <label>Date</label>
+              <input type="date" id="gpxDate" style="color-scheme:dark">
+            </div>
+          </div>
+          <div class="gpx-xp-preview" id="gpxXpPreview"></div>
+        </div>
+        <div class="gpx-modal-footer">
+          <button class="btn-gpx-cancel" onclick="closeGpxModal()">Cancel</button>
+          <button class="btn-gpx-confirm" onclick="confirmGpxLog()">✦ Log Activity</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenges -->
+    <div class="challenges-panel">
+      <div class="challenges-header">
+        <h2>Weekly Challenges</h2>
+        <span class="challenges-reset" id="challengeResetLabel"></span>
+      </div>
+      <div class="challenges-body" id="challengesBody"></div>
+    </div>
+
+    <!-- Challenge selection modal -->
+    <div id="challengeModal">
+      <div class="challenge-modal-box">
+        <div class="challenge-modal-header">
+          <h2 id="challengeModalTitle">Choose a Challenge</h2>
+          <button class="btn-close-modal" onclick="closeChallengeModal()">✕</button>
+        </div>
+        <div id="challengeModalOptions"></div>
+      </div>
+    </div>
+
+    <!-- Activity Calendar -->
+    <div class="cal-panel">
+      <div class="cal-header">
+        <h2>Training Log</h2>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calPrevMonth()">‹</button>
+          <span class="cal-month-label" id="calMonthLabel"></span>
+          <button class="cal-nav-btn" onclick="calNextMonth()">›</button>
+        </div>
+      </div>
+      <div class="cal-body">
+        <div class="cal-weekdays">
+          <div class="cal-weekday">Mon</div>
+          <div class="cal-weekday">Tue</div>
+          <div class="cal-weekday">Wed</div>
+          <div class="cal-weekday">Thu</div>
+          <div class="cal-weekday">Fri</div>
+          <div class="cal-weekday">Sat</div>
+          <div class="cal-weekday">Sun</div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+
+    <!-- Day detail modal -->
+    <div id="dayModal">
+      <div class="day-modal-box">
+        <div class="day-modal-header">
+          <h2 id="dayModalTitle"></h2>
+          <button class="btn-close-modal" onclick="closeDayModal()">✕</button>
+        </div>
+        <div class="day-modal-body" id="dayModalBody"></div>
+      </div>
+    </div>
+
+    </div><!-- end #pageDashboard -->
+
+    <!-- Skill detail modal -->
+    <div id="skillModal" onclick="if(event.target===this)closeSkillModal()">
+      <div class="skill-modal-box">
+        <div class="skill-modal-header">
+          <div class="skill-modal-title-row">
+            <span class="skill-modal-icon" id="skillModalIcon"></span>
+            <h2 id="skillModalTitle"></h2>
+          </div>
+          <button class="btn-close-modal" onclick="closeSkillModal()">✕</button>
+        </div>
+        <div class="skill-modal-body">
+          <div class="skill-modal-graph-section">
+            <div class="skill-modal-section-label" id="skillChartLabel">Progress</div>
+            <div id="skillChartFilters"></div>
+            <canvas id="skillProgressChart" height="140"></canvas>
+            <canvas id="skillProgressChart2" height="140" style="display:none;margin-top:16px"></canvas>
+            <div class="skill-chart-empty" id="skillChartEmpty">No data yet — log some activities to see your progress.</div>
+          </div>
+          <div class="skill-modal-recent-section">
+            <div class="skill-modal-section-label">Last 5 Activities</div>
+            <div id="skillRecentList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Records page -->
+    <div id="pagePR">
+      <div class="pr-section str">
+        <div class="pr-section-header"><h3>💪 Strength Records</h3></div>
+        <div id="prStr"><div class="pr-empty">No strength activities logged yet.</div></div>
+      </div>
+      <div class="pr-section run">
+        <div class="pr-section-header"><h3>🏃 Running Records</h3></div>
+        <div id="prRun"><div class="pr-empty">No running activities logged yet.</div></div>
+      </div>
+      <div class="pr-section swm">
+        <div class="pr-section-header"><h3>🏊 Swimming Records</h3></div>
+        <div id="prSwm"><div class="pr-empty">No swimming activities logged yet.</div></div>
+      </div>
+      <div class="pr-section cyc">
+        <div class="pr-section-header"><h3>🚴 Cycling Records</h3></div>
+        <div id="prCyc"><div class="pr-empty">No cycling activities logged yet.</div></div>
+      </div>
+      <div class="pr-section spt">
+        <div class="pr-section-header"><h3>⚽ Sports Records</h3></div>
+        <div id="prSpt"><div class="pr-empty">No sports activities logged yet.</div></div>
+      </div>
+    </div>
+
+    <!-- Profile page -->
+    <div id="pageProfile">
+      <!-- Body stats -->
+      <div class="profile-panel">
+        <div class="profile-panel-header"><h2>Body Stats</h2></div>
+        <div class="profile-panel-body">
+          <div class="profile-form-grid">
+            <div class="field">
+              <label>Height (cm)</label>
+              <input type="number" id="profileHeight" min="100" max="250" step="1" placeholder="e.g. 178" oninput="saveProfile()">
+            </div>
+            <div class="field">
+              <label>Weight (kg)</label>
+              <input type="number" id="profileWeight" min="30" max="300" step="0.1" placeholder="e.g. 75.5" oninput="saveProfile()">
+            </div>
+          </div>
+          <div class="profile-bmi" id="profileBmi"></div>
+          <div class="profile-save-indicator" id="profileSaveIndicator">✓ Saved</div>
+        </div>
+      </div>
+
+      <!-- Goals -->
+      <div class="profile-panel">
+        <div class="profile-panel-header">
+          <h2>Goals</h2>
+        </div>
+        <div class="profile-panel-body">
+          <div class="goals-add-row">
+            <input type="text" id="goalInput" placeholder="e.g. Run a 5km under 25 minutes" maxlength="120"
+              onkeydown="if(event.key==='Enter')addGoal()">
+            <button class="btn-add-goal" onclick="addGoal()">+ Add</button>
+          </div>
+          <div id="goalsList"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/skills.js"></script>
+<script src="js/log.js"></script>
+<script src="js/prs.js"></script>
+<script src="js/challenges.js"></script>
+<script src="js/gpx.js"></script>
+<script src="js/profile.js"></script>
+
+<script>
+// ── PWA Service Worker (inline, registered via blob URL) ──
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'fitnesstracker-v1';
+const FONTS = [
+  'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(FONTS).catch(() => {}))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  // Cache-first for fonts, network-first for everything else
+  if (e.request.url.includes('fonts.g')) {
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }))
+    );
+  }
+});
+`;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const url  = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(() => {});
+}
+</script>
+</body>
+</html>
